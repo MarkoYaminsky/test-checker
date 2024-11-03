@@ -4,7 +4,6 @@ from fastapi import Depends, Header
 from sqlalchemy.orm import Session
 
 from app.auth.services import JWTTokenType, decode_jwt_token, validate_jwt_token_payload
-from app.core.config import settings
 from app.core.db import SessionLocal
 from app.users.models import User
 
@@ -15,10 +14,6 @@ def get_db() -> Session:
         yield db
     finally:
         db.close()
-
-
-def get_settings():
-    return settings
 
 
 def get_http_authenticated_user(

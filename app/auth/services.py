@@ -9,8 +9,10 @@ from sqlalchemy.orm import Session
 from app.auth.constants import ENCODING_ALGORITHM
 from app.auth.exceptions import InvalidJWTTokenException
 from app.auth.types import JWTTokenPayload, JWTTokenType
+from app.common.utilities import get_user_model
 from app.core.config import settings
-from app.users.models import User
+
+User = get_user_model()
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

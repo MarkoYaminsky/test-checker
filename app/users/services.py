@@ -4,15 +4,18 @@ from sqlalchemy import BinaryExpression
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query, Session
 
+from app.auth.services import verify_password
 from app.auth.types import JWTTokenType
 from app.common.services import get_all_entities_query
+from app.common.utilities import get_user_model
 from app.users.api.schemas import UserLoginOutputSchema
 from app.users.exceptions import (
     InvalidUserCredentialsException,
     UserDoesNotExistException,
     UserUsernameNotQniqueException,
 )
-from app.users.models import User
+
+User = get_user_model()
 
 
 def get_all_users_query(db: Session, *, condition: Optional[BinaryExpression] = None, **filters: Any) -> Query[User]:
@@ -33,14 +36,18 @@ def create_user(db: Session, username: str, password: str) -> Optional[User]:
 
 
 def login_user(db: Session, username: str, password: str) -> UserLoginOutputSchema:
-    from app.auth.services import create_jwt_token, verify_password
+    from app.auth.services import create_jwt_token
 
     user = get_all_users_query(db, username=username).scalar()
     if user is None:
         raise UserDoesNotExistException(username=username)
-    if not verify_password(password, user.password):
+    if not verify_user_password(user, password):
         raise InvalidUserCredentialsException()
     return UserLoginOutputSchema(
         access_token=create_jwt_token(user_id=user.id, token_type=JWTTokenType.access),
         refresh_token=create_jwt_token(user_id=user.id, token_type=JWTTokenType.refresh),
     )
+
+
+def verify_user_password(user: User, plain_password: str) -> bool:
+    return verify_password(plain_password, user.password)

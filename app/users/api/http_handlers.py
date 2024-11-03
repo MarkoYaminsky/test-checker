@@ -5,6 +5,7 @@ from starlette import status
 from app.auth.types import JWTTokenType
 from app.common.decorators import expects_exceptions
 from app.common.dependencies import get_db, get_http_authenticated_user
+from app.common.utilities import get_user_model
 from app.users.api.schemas import (
     TokenObtainByRefreshOutputSchema,
     TokenRefreshInputSchema,
@@ -18,10 +19,11 @@ from app.users.exceptions import (
     UserDoesNotExistException,
     UserUsernameNotQniqueException,
 )
-from app.users.models import User
 from app.users.services import create_user, login_user
 
 user_http_router = APIRouter()
+
+User = get_user_model()
 
 
 @user_http_router.get("/self/", response_model=UserSchema)

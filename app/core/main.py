@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 
-from app.chat import chat_router
+from app.chat.api.router import chat_router
 from app.core.db import Base, engine
-from app.users.api import users_router
+from app.users.api.router import users_router
 
 app = FastAPI()
 
