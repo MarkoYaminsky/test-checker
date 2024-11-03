@@ -8,4 +8,3 @@ class User(BaseDatabaseModel):
 
     username = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
-

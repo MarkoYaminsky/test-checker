@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.constants import ENCODING_ALGORITHM
 from app.auth.exceptions import InvalidJWTTokenException
-from app.auth.types import JWTTokenType, JWTTokenPayload
+from app.auth.types import JWTTokenPayload, JWTTokenType
 from app.core.config import settings
 from app.users.models import User
 
@@ -32,8 +32,7 @@ def decode_jwt_token(token: str) -> Optional[JWTTokenPayload]:
         payload = jwt.decode(token, settings.encoding_key, algorithms=[ENCODING_ALGORITHM])
         expiration_datetime = datetime.utcfromtimestamp(float(payload.pop("exp", 0)))
         return JWTTokenPayload(**payload, exp=expiration_datetime) if payload else None
-    except jwt.PyJWTError as e:
-        print(token)
+    except jwt.PyJWTError:
         raise InvalidJWTTokenException
 
 

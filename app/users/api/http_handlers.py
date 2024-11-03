@@ -5,9 +5,19 @@ from starlette import status
 from app.auth.types import JWTTokenType
 from app.common.decorators import expects_exceptions
 from app.common.dependencies import get_db, get_http_authenticated_user
-from app.users.api.schemas import UserSchema, UserRegistrationInputSchema, UserLoginOutputSchema, UserLoginInputSchema, \
-    TokenObtainByRefreshOutputSchema, TokenRefreshInputSchema, WebsocketTokenOutputSchema
-from app.users.exceptions import UserUsernameNotQniqueException, UserDoesNotExistException
+from app.users.api.schemas import (
+    TokenObtainByRefreshOutputSchema,
+    TokenRefreshInputSchema,
+    UserLoginInputSchema,
+    UserLoginOutputSchema,
+    UserRegistrationInputSchema,
+    UserSchema,
+    WebsocketTokenOutputSchema,
+)
+from app.users.exceptions import (
+    UserDoesNotExistException,
+    UserUsernameNotQniqueException,
+)
 from app.users.models import User
 from app.users.services import create_user, login_user
 

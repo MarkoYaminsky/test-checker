@@ -23,4 +23,4 @@ repos:
     rev: 6.1.0
     hooks:
       - id: flake8
-        args: [ '--config=reminder_backend/setup.cfg' ]
+        args: [ '--config=setup.cfg' ]

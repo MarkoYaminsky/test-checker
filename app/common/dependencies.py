@@ -1,9 +1,9 @@
 from typing import Optional
 
-from fastapi import Header, Depends
+from fastapi import Depends, Header
 from sqlalchemy.orm import Session
 
-from app.auth.services import decode_jwt_token, validate_jwt_token_payload, JWTTokenType
+from app.auth.services import JWTTokenType, decode_jwt_token, validate_jwt_token_payload
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.users.models import User
@@ -22,7 +22,7 @@ def get_settings():
 
 
 def get_http_authenticated_user(
-        authorization: Optional[str] = Header("Bearer "), db: Session = Depends(get_db)
+    authorization: Optional[str] = Header("Bearer "), db: Session = Depends(get_db)
 ) -> Optional[User]:
     """
     Get the http authenticated user from the JWT token in the Authorization header.

@@ -9,7 +9,4 @@ class BaseCustomException(Exception):
 
     @property
     def information(self) -> dict[str, str]:
-        return {
-            "description": self.description,
-            "code": self.code
-        }
+        return {"description": self.description, "code": self.code}

@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from starlette.websockets import WebSocket, WebSocketDisconnect
