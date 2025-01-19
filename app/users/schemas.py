@@ -3,9 +3,10 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
-class UserSchema(BaseModel):
+class UserOutputSchema(BaseModel):
     id: UUID
     username: str
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -30,7 +31,3 @@ class TokenRefreshInputSchema(BaseModel):
 
 class TokenObtainByRefreshOutputSchema(BaseModel):
     access_token: str
-
-
-class WebsocketTokenOutputSchema(BaseModel):
-    websocket_token: str
