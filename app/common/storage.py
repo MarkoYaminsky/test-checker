@@ -8,7 +8,7 @@ from app.core.config import settings
 session = boto3.session.Session()
 client = session.client(
     "s3",
-    region_name="fra1",  # Your region
+    region_name="fra1",
     endpoint_url=settings.bucket_endpoint,
     aws_access_key_id=settings.bucket_access_key_id,
     aws_secret_access_key=settings.bucket_access_key,
