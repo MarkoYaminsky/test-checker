@@ -1,6 +1,6 @@
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import UploadFile
 from pydantic import BaseModel, ConfigDict
 
 from app.student_tests.models import Question
@@ -44,7 +44,7 @@ class QuestionCreateSchema(BaseModel):
 
 class TestCreateSchema(BaseModel):
     name: str
-    questions: list[QuestionCreateSchema]
+    questions: list[QuestionCreateSchema] = []
 
 
 class QuestionUpdateSchema(BaseModel):
@@ -56,17 +56,12 @@ class AnswerUpdateSchema(BaseModel):
     is_correct: bool
 
 
-class StudentTestAnswerCreateSchema(BaseModel):
-    student_username: str
-    results_photo: UploadFile
-
-
 class StudentTestAnswerOutputSchema(BaseModel):
     id: UUID
     test_id: UUID
-    created_at: str
+    created_at: datetime
     student_username: str
     results_photo_url: str
-    score: int
+    score: int | None
 
     model_config = ConfigDict(from_attributes=True)

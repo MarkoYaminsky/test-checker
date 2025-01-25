@@ -1,16 +1,18 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Form, UploadFile
 from sqlalchemy.orm import Session
 
 from app.common.dependencies import get_db_session, get_http_authenticated_user
 from app.common.handlers import check_if_object_belongs_to_user, get_object_or_404
+from app.common.storage import upload_test_result
 from app.common.utilities import get_user_model
 from app.student_tests.models import Answer, Question, Test
 from app.student_tests.schemas import (
     AnswerCreateSchema,
     AnswerOutputSchema,
+    AnswerUpdateSchema,
     QuestionCreateSchema,
     QuestionOutputSchema,
-    StudentTestAnswerCreateSchema,
+    QuestionUpdateSchema,
     StudentTestAnswerOutputSchema,
     TestCreateSchema,
     TestOutputSchema,
@@ -106,7 +108,7 @@ async def update_test_route(
 @student_tests_router.put("/questions/{question_id}/", response_model=QuestionOutputSchema)
 async def update_question_route(
     question_id: str,
-    question_data: QuestionCreateSchema,
+    question_data: QuestionUpdateSchema,
     user: User = Depends(get_http_authenticated_user),
     session: Session = Depends(get_db_session),
 ):
@@ -123,7 +125,7 @@ async def update_question_route(
 @student_tests_router.put("/questions/answers/{answer_id}/", response_model=AnswerOutputSchema)
 async def update_answer_route(
     answer_id: str,
-    answer_data: AnswerCreateSchema,
+    answer_data: AnswerUpdateSchema,
     user: User = Depends(get_http_authenticated_user),
     session: Session = Depends(get_db_session),
 ):
@@ -163,16 +165,16 @@ async def delete_answer_route(
     delete_answer(session=session, answer=answer)
 
 
-@student_tests_router.post("{test_id}/submit/")
+@student_tests_router.post("/{test_id}/submit/")
 async def submit_test_answer_route(
-    test_id: str, answer_data: StudentTestAnswerCreateSchema, session: Session = Depends(get_db_session)
+    test_id: str,
+    student_username: str = Form(),
+    results_photo: UploadFile = UploadFile(...),
+    session: Session = Depends(get_db_session),
 ):
     test = get_object_or_404(session, Test, id=test_id)
     return create_student_answer(
-        session=session,
-        test=test,
-        student_username=answer_data.student_username,
-        results_photo=...,  # TODO Implement this
+        session=session, test=test, student_username=student_username, results_url=upload_test_result(results_photo)
     )
 
 

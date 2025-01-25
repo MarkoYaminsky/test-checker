@@ -103,10 +103,8 @@ def update_answer(session: Session, answer: Answer, content: str, is_correct: bo
     return answer
 
 
-def create_student_answer(session: Session, test: Test, student_username: str, **_) -> StudentTestAnswer:
-    # TODO Implement file logic
-    photo_url = "https://example.com/photo.jpg"
-    answer = StudentTestAnswer(test_id=test.id, student_username=student_username, results_photo_url=photo_url)
+def create_student_answer(session: Session, test: Test, student_username: str, results_url: str) -> StudentTestAnswer:
+    answer = StudentTestAnswer(test_id=test.id, student_username=student_username, results_photo_url=results_url)
     session.add(answer)
     session.commit()
     session.refresh(answer)
