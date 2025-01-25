@@ -91,6 +91,18 @@ async def create_answer_route(
     )
 
 
+@student_tests_router.get("/questions/{question_id}/answers/", response_model=list[AnswerOutputSchema])
+async def get_answers_route(
+    question_id: str,
+    user: User = Depends(get_http_authenticated_user),
+    session: Session = Depends(get_db_session),
+):
+    question = get_object_or_404(session, Question, id=question_id)
+    check_if_object_belongs_to_user(question.test.teacher, user)
+
+    return question.answers
+
+
 @student_tests_router.get("/", response_model=list[TestOutputSchema])
 async def get_tests_route(user: User = Depends(get_http_authenticated_user), _: Session = Depends(get_db_session)):
     return user.tests
