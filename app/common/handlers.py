@@ -10,8 +10,8 @@ from app.common.utilities import get_user_model
 User = get_user_model()
 
 
-def get_object_or_404(db: Session, model: Type[DatabaseInstanceType], **filters) -> DatabaseInstanceType:
-    obj = db.query(model).filter_by(**filters).first()
+def get_object_or_404(session: Session, model: Type[DatabaseInstanceType], **filters) -> DatabaseInstanceType:
+    obj = session.query(model).filter_by(**filters).first()
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Object not found")
     return obj

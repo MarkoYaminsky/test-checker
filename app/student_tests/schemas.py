@@ -3,8 +3,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from app.student_tests.models import Question
-
 
 class AnswerOutputSchema(BaseModel):
     id: UUID
@@ -17,8 +15,8 @@ class AnswerOutputSchema(BaseModel):
 class QuestionOutputSchema(BaseModel):
     id: UUID
     content: str
+    points: int
     position_number: int
-    type: Question.Type
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -37,7 +35,6 @@ class AnswerCreateSchema(BaseModel):
 
 class QuestionCreateSchema(BaseModel):
     content: str
-    type: Question.Type
     points: int
     answers: list[AnswerCreateSchema]
 
@@ -62,6 +59,8 @@ class StudentTestAnswerOutputSchema(BaseModel):
     created_at: datetime
     student_username: str
     results_photo_url: str
+    test_name: str
+    max_score: int
     score: int | None
 
     model_config = ConfigDict(from_attributes=True)

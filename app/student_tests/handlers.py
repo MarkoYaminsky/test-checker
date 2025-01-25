@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session
 
 from app.common.dependencies import get_db_session, get_http_authenticated_user
@@ -18,6 +18,7 @@ from app.student_tests.schemas import (
     TestOutputSchema,
 )
 from app.student_tests.services import (
+    annotate_student_answers_with_test_info,
     create_answer,
     create_question,
     create_student_answer,
@@ -57,10 +58,22 @@ async def create_question_route(
     return create_question(
         session=session,
         test=test,
+        points=question_data.points,
         content=question_data.content,
-        question_type=question_data.type,
         answers=question_data.answers,
     )
+
+
+@student_tests_router.get("/{test_id}/questions/", response_model=list[QuestionOutputSchema])
+async def get_questions_route(
+    test_id: str,
+    user: User = Depends(get_http_authenticated_user),
+    session: Session = Depends(get_db_session),
+):
+    test = get_object_or_404(session, Test, id=test_id)
+    check_if_object_belongs_to_user(test.teacher, user)
+
+    return test.questions
 
 
 @student_tests_router.post("/questions/{question_id}/answers/", response_model=AnswerOutputSchema)
@@ -168,8 +181,8 @@ async def delete_answer_route(
 @student_tests_router.post("/{test_id}/submit/")
 async def submit_test_answer_route(
     test_id: str,
-    student_username: str = Form(),
-    results_photo: UploadFile = UploadFile(...),
+    student_username: str = Form(...),
+    results_photo: UploadFile = File(...),
     session: Session = Depends(get_db_session),
 ):
     test = get_object_or_404(session, Test, id=test_id)
@@ -185,4 +198,7 @@ async def get_student_test_answers_route(
     test = get_object_or_404(session, Test, id=test_id)
     check_if_object_belongs_to_user(test.teacher, user)
 
-    return test.student_test_answers  # TODO Annotate with max score and test name
+    return annotate_student_answers_with_test_info(session=session, answers=test.student_test_answers)
+
+
+# TODO Add endpoint that generates pdf with table for test
