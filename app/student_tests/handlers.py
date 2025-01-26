@@ -1,8 +1,11 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.dependencies import get_db_session, get_http_authenticated_user
 from app.common.handlers import check_if_object_belongs_to_user, get_object_or_404
+from app.common.services import query_relationship
 from app.common.storage import upload_test_result
 from app.common.utilities import get_user_model
 from app.student_tests.models import Answer, Question, Test
@@ -18,7 +21,6 @@ from app.student_tests.schemas import (
     TestOutputSchema,
 )
 from app.student_tests.services import (
-    annotate_student_answers_with_test_info,
     create_answer,
     create_question,
     create_student_answer,
@@ -26,6 +28,7 @@ from app.student_tests.services import (
     delete_answer,
     delete_question,
     delete_test,
+    get_student_answers_with_test_info,
     update_answer,
     update_question,
     update_test,
@@ -40,22 +43,22 @@ student_tests_router = APIRouter()
 async def create_test_route(
     test_data: TestCreateSchema,
     user: User = Depends(get_http_authenticated_user),
-    session: Session = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    return create_test(session=session, teacher=user, name=test_data.name, questions=test_data.questions)
+    return await create_test(session=session, teacher=user, name=test_data.name, questions=test_data.questions)
 
 
 @student_tests_router.post("/{test_id}/questions/", response_model=QuestionOutputSchema)
 async def create_question_route(
-    test_id: str,
+    test_id: UUID,
     question_data: QuestionCreateSchema,
     user: User = Depends(get_http_authenticated_user),
-    session: Session = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    test = get_object_or_404(session, Test, id=test_id)
+    test = await get_object_or_404(session, Test, id=test_id)
     check_if_object_belongs_to_user(test.teacher, user)
 
-    return create_question(
+    return await create_question(
         session=session,
         test=test,
         points=question_data.points,
@@ -66,24 +69,24 @@ async def create_question_route(
 
 @student_tests_router.get("/{test_id}/questions/", response_model=list[QuestionOutputSchema])
 async def get_questions_route(
-    test_id: str,
+    test_id: UUID,
     user: User = Depends(get_http_authenticated_user),
-    session: Session = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    test = get_object_or_404(session, Test, id=test_id)
+    test = await get_object_or_404(session, Test, id=test_id)
     check_if_object_belongs_to_user(test.teacher, user)
 
-    return test.questions
+    return await query_relationship(session, test, "questions")
 
 
 @student_tests_router.post("/questions/{question_id}/answers/", response_model=AnswerOutputSchema)
 async def create_answer_route(
-    question_id: str,
+    question_id: UUID,
     answer_data: AnswerCreateSchema,
     user: User = Depends(get_http_authenticated_user),
-    session: Session = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    question = get_object_or_404(session, Question, id=question_id)
+    question = await get_object_or_404(session, Question, id=question_id)
     check_if_object_belongs_to_user(question.test.teacher, user)
 
     return create_answer(
@@ -93,54 +96,54 @@ async def create_answer_route(
 
 @student_tests_router.get("/questions/{question_id}/answers/", response_model=list[AnswerOutputSchema])
 async def get_answers_route(
-    question_id: str,
+    question_id: UUID,
     user: User = Depends(get_http_authenticated_user),
-    session: Session = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    question = get_object_or_404(session, Question, id=question_id)
+    question = await get_object_or_404(session, Question, id=question_id)
     check_if_object_belongs_to_user(question.test.teacher, user)
 
-    return question.answers
+    return await query_relationship(session, question, "answers")
 
 
 @student_tests_router.get("/", response_model=list[TestOutputSchema])
-async def get_tests_route(user: User = Depends(get_http_authenticated_user), _: Session = Depends(get_db_session)):
-    return user.tests
+async def get_tests_route(
+    user: User = Depends(get_http_authenticated_user), session: AsyncSession = Depends(get_db_session)
+):
+    return await query_relationship(session=session, instance=user, relationship_attribute="tests")
 
 
 @student_tests_router.get("/{test_id}/", response_model=TestOutputSchema)
-async def get_test_route(test_id: str, session: Session = Depends(get_db_session)):
-    test = get_object_or_404(session, Test, id=test_id)
-
-    return test
+async def get_test_route(test_id: UUID, session: AsyncSession = Depends(get_db_session)):
+    return await get_object_or_404(session, Test, id=test_id)
 
 
 @student_tests_router.put("/{test_id}/", response_model=TestOutputSchema)
 async def update_test_route(
-    test_id: str,
+    test_id: UUID,
     test_data: TestCreateSchema,
     user: User = Depends(get_http_authenticated_user),
-    session: Session = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    test = get_object_or_404(session, Test, id=test_id)
+    test = await get_object_or_404(session, Test, id=test_id)
     check_if_object_belongs_to_user(test.teacher, user)
 
-    update_test(session=session, test=test, name=test_data.name)
+    await update_test(session=session, test=test, name=test_data.name)
 
     return test
 
 
 @student_tests_router.put("/questions/{question_id}/", response_model=QuestionOutputSchema)
 async def update_question_route(
-    question_id: str,
+    question_id: UUID,
     question_data: QuestionUpdateSchema,
     user: User = Depends(get_http_authenticated_user),
-    session: Session = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    question = get_object_or_404(session, Question, id=question_id)
+    question = await get_object_or_404(session, Question, id=question_id)
     check_if_object_belongs_to_user(question.test.teacher, user)
 
-    return update_question(
+    return await update_question(
         session=session,
         question=question,
         content=question_data.content,
@@ -149,68 +152,75 @@ async def update_question_route(
 
 @student_tests_router.put("/questions/answers/{answer_id}/", response_model=AnswerOutputSchema)
 async def update_answer_route(
-    answer_id: str,
+    answer_id: UUID,
     answer_data: AnswerUpdateSchema,
     user: User = Depends(get_http_authenticated_user),
-    session: Session = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    answer = get_object_or_404(session, Answer, id=answer_id)
+    answer = await get_object_or_404(session, Answer, id=answer_id)
     check_if_object_belongs_to_user(answer.question.test.teacher, user)
 
-    return update_answer(session=session, answer=answer, content=answer_data.content, is_correct=answer_data.is_correct)
+    return await update_answer(
+        session=session, answer=answer, content=answer_data.content, is_correct=answer_data.is_correct
+    )
 
 
 @student_tests_router.delete("/{test_id}/")
 async def delete_test_route(
-    test_id: str, user: User = Depends(get_http_authenticated_user), session: Session = Depends(get_db_session)
+    test_id: UUID, user: User = Depends(get_http_authenticated_user), session: AsyncSession = Depends(get_db_session)
 ):
-    test = get_object_or_404(session, Test, id=test_id)
+    test = await get_object_or_404(session, Test, id=test_id)
     check_if_object_belongs_to_user(test.teacher, user)
 
-    delete_test(session=session, test=test)
+    await delete_test(session=session, test=test)
 
 
 @student_tests_router.delete("/questions/{question_id}/")
 async def delete_question_route(
-    question_id: str, user: User = Depends(get_http_authenticated_user), session: Session = Depends(get_db_session)
+    question_id: UUID,
+    user: User = Depends(get_http_authenticated_user),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    question = get_object_or_404(session, Question, id=question_id)
+    question = await get_object_or_404(session, Question, id=question_id)
     check_if_object_belongs_to_user(question.test.teacher, user)
 
-    delete_question(session=session, question=question)
+    await delete_question(session=session, question=question)
 
 
 @student_tests_router.delete("/questions/answers/{answer_id}/")
 async def delete_answer_route(
-    answer_id: str, user: User = Depends(get_http_authenticated_user), session: Session = Depends(get_db_session)
+    answer_id: UUID, user: User = Depends(get_http_authenticated_user), session: AsyncSession = Depends(get_db_session)
 ):
-    answer = get_object_or_404(session, Answer, id=answer_id)
+    answer = await get_object_or_404(session, Answer, id=answer_id)
     check_if_object_belongs_to_user(answer.question.test.teacher, user)
 
-    delete_answer(session=session, answer=answer)
+    await delete_answer(session=session, answer=answer)
 
 
 @student_tests_router.post("/{test_id}/submit/")
 async def submit_test_answer_route(
-    test_id: str,
+    test_id: UUID,
     student_username: str = Form(...),
     results_photo: UploadFile = File(...),
-    session: Session = Depends(get_db_session),
+    session: AsyncSession = Depends(get_db_session),
 ):
-    test = get_object_or_404(session, Test, id=test_id)
-    return create_student_answer(
-        session=session, test=test, student_username=student_username, results_url=upload_test_result(results_photo)
+    test = await get_object_or_404(session, Test, id=test_id)
+    return await create_student_answer(
+        session=session,
+        test=test,
+        student_username=student_username,
+        results_url=await upload_test_result(results_photo),
     )
 
 
 @student_tests_router.get("/{test_id}/student-answers/", response_model=list[StudentTestAnswerOutputSchema])
 async def get_student_test_answers_route(
-    test_id: str, user: User = Depends(get_http_authenticated_user), session: Session = Depends(get_db_session)
+    test_id: UUID, user: User = Depends(get_http_authenticated_user), session: AsyncSession = Depends(get_db_session)
 ):
-    test = get_object_or_404(session, Test, id=test_id)
+    test = await get_object_or_404(session, Test, id=test_id)
     check_if_object_belongs_to_user(test.teacher, user)
 
-    return annotate_student_answers_with_test_info(session=session, answers=test.student_test_answers)
+    return await get_student_answers_with_test_info(session=session, test=test)
 
 
 # TODO Add endpoint that generates pdf with table for test

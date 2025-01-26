@@ -1,5 +1,5 @@
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.services import move_row_values_to_attributes
 from app.common.utilities import get_user_model
@@ -9,13 +9,13 @@ from app.student_tests.schemas import AnswerCreateSchema, QuestionCreateSchema
 User = get_user_model()
 
 
-def create_test(session: Session, teacher: User, name: str, questions: list[QuestionCreateSchema]) -> Test:
+async def create_test(session: AsyncSession, teacher: User, name: str, questions: list[QuestionCreateSchema]) -> Test:
     test = Test(teacher_id=teacher.id, name=name)
     session.add(test)
-    session.commit()
+    await session.commit()
 
     for index, question in enumerate(questions, start=1):
-        create_question(
+        await create_question(
             session=session,
             test=test,
             position_number=index,
@@ -27,8 +27,8 @@ def create_test(session: Session, teacher: User, name: str, questions: list[Ques
     return test
 
 
-def create_question(
-    session: Session,
+async def create_question(
+    session: AsyncSession,
     test: Test,
     content: str,
     points: int,
@@ -40,11 +40,11 @@ def create_question(
 
     question = Question(test_id=test.id, content=content, position_number=position_number, points=points)
     session.add(question)
-    session.commit()
-    session.refresh(question)
+    await session.commit()
+    await session.refresh(question)
 
     for index, answer in enumerate(answers, start=1):
-        create_answer(
+        await create_answer(
             session=session,
             question=question,
             position_number=index,
@@ -55,69 +55,70 @@ def create_question(
     return question
 
 
-def create_answer(
-    session: Session, question: Question, content: str, is_correct: bool, position_number: int | None = None
+async def create_answer(
+    session: AsyncSession, question: Question, content: str, is_correct: bool, position_number: int | None = None
 ) -> Answer:
     if position_number is None:
         position_number = len(question.answers) + 1
 
     answer = Answer(question_id=question.id, content=content, is_correct=is_correct, position_number=position_number)
     session.add(answer)
-    session.commit()
-    session.refresh(answer)
+    await session.commit()
+    await session.refresh(answer)
     return answer
 
 
-def delete_test(session: Session, test: Test) -> None:
-    session.delete(test)
-    session.commit()
+async def delete_test(session: AsyncSession, test: Test) -> None:
+    await session.delete(test)
+    await session.commit()
 
 
-def delete_question(session: Session, question: Question) -> None:
-    session.delete(question)
-    session.commit()
+async def delete_question(session: AsyncSession, question: Question) -> None:
+    await session.delete(question)
+    await session.commit()
 
 
-def delete_answer(session: Session, answer: Answer) -> None:
-    session.delete(answer)
-    session.commit()
+async def delete_answer(session: AsyncSession, answer: Answer) -> None:
+    await session.delete(answer)
+    await session.commit()
 
 
-def update_test(session: Session, test: Test, name: str) -> Test:
+async def update_test(session: AsyncSession, test: Test, name: str) -> Test:
     test.name = name
-    session.commit()
-    session.refresh(test)
+    await session.commit()
+    await session.refresh(test)
     return test
 
 
-def update_question(session: Session, question: Question, content: str) -> Question:
+async def update_question(session: AsyncSession, question: Question, content: str) -> Question:
     question.content = content
-    session.commit()
-    session.refresh(question)
+    await session.commit()
+    await session.refresh(question)
     return question
 
 
-def update_answer(session: Session, answer: Answer, content: str, is_correct: bool) -> Answer:
+async def update_answer(session: AsyncSession, answer: Answer, content: str, is_correct: bool) -> Answer:
     answer.content = content
     answer.is_correct = is_correct
-    session.commit()
-    session.refresh(answer)
+    await session.commit()
+    await session.refresh(answer)
     return answer
 
 
-def create_student_answer(session: Session, test: Test, student_username: str, results_url: str) -> StudentTestAnswer:
+async def create_student_answer(
+    session: AsyncSession, test: Test, student_username: str, results_url: str
+) -> StudentTestAnswer:
     answer = StudentTestAnswer(test_id=test.id, student_username=student_username, results_photo_url=results_url)
     session.add(answer)
-    session.commit()
-    session.refresh(answer)
+    await session.commit()
+    await session.refresh(answer)
     # TODO Launch celery task for grading the test
     return answer
 
 
-def annotate_student_answers_with_test_info(
-    session: Session, answers: list[StudentTestAnswer]
+async def get_student_answers_with_test_info(
+    session: AsyncSession, test: Test
 ) -> list[dict[StudentTestAnswer, str, str]]:
-    answer_ids = [answer.id for answer in answers]
     query = (
         select(
             StudentTestAnswer,
@@ -127,15 +128,16 @@ def annotate_student_answers_with_test_info(
         .select_from(StudentTestAnswer)
         .join(Test)
         .outerjoin(Question)
-        .where(StudentTestAnswer.id.in_(answer_ids))
+        .where(StudentTestAnswer.test_id == test.id)
         .group_by(
             StudentTestAnswer.id,
             Test.name,
         )
     )
 
+    results = await session.execute(query)
     return move_row_values_to_attributes(
-        session.execute(query).all(),
+        results,
         (
             "test_name",
             "max_score",

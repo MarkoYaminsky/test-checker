@@ -1,17 +1,20 @@
-from typing import Type
+from typing import Any, Type
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from app.common.services import quick_select
 from app.common.types import DatabaseInstanceType
 from app.common.utilities import get_user_model
 
 User = get_user_model()
 
 
-def get_object_or_404(session: Session, model: Type[DatabaseInstanceType], **filters) -> DatabaseInstanceType:
-    obj = session.query(model).filter_by(**filters).first()
+async def get_object_or_404(
+    session: AsyncSession, model: Type[DatabaseInstanceType], **filters: Any
+) -> DatabaseInstanceType:
+    obj = (await quick_select(session=session, model=model, filter_by=filters)).scalar()
     if obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Object not found")
     return obj

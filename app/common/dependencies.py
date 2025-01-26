@@ -1,28 +1,26 @@
 from typing import Optional
 
 from fastapi import Depends, Header
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.services import JWTTokenType, decode_jwt_token, validate_jwt_token_payload
 from app.core.db import SessionLocal
 from app.users.models import User
 
 
-def get_db_session() -> Session:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_db_session() -> AsyncSession:
+    async with SessionLocal() as session:
+        yield session
+        await session.commit()
 
 
-def get_http_authenticated_user(
-    authorization: Optional[str] = Header("Bearer "), db: Session = Depends(get_db_session)
-) -> Optional[User]:
+async def get_http_authenticated_user(
+    authorization: Optional[str] = Header("Bearer "), session: AsyncSession = Depends(get_db_session)
+) -> User | None:
     """
     Get the http authenticated user from the JWT token in the Authorization header.
     Raises an exception if the token is invalid or expired, or if the header is not present.
     """
     token = authorization.split("Bearer ")[1]
     payload = decode_jwt_token(token)
-    return validate_jwt_token_payload(db=db, payload=payload, token_type=JWTTokenType.access)
+    return await validate_jwt_token_payload(session=session, payload=payload, token_type=JWTTokenType.access)

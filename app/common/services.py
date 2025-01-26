@@ -1,25 +1,39 @@
-from typing import Any, Optional, Sequence, Type
+from typing import Any, Type
 
-from sqlalchemy import BinaryExpression, Row
-from sqlalchemy.orm import Query, Session
+from sqlalchemy import Result, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from app.common.models import BaseDatabaseModel
 from app.common.types import DatabaseInstanceType
 
 
-def get_all_entities_query(
-    db: Session, model: Type[DatabaseInstanceType], *, condition: Optional[BinaryExpression] = None, **filters: Any
-) -> Query[DatabaseInstanceType]:
-    query = db.query(model)
-    if condition is not None:
-        query = query.filter(condition)
-    if filters:
-        query = query.filter_by(**filters)
-    return query
-
-
-def move_row_values_to_attributes(rows: Sequence[Row], attribute_names: tuple[str, ...]) -> list[DatabaseInstanceType]:
+def move_row_values_to_attributes(rows: Result, attribute_names: tuple[str, ...]) -> list[DatabaseInstanceType]:
+    annotated_objects = []
     for row in rows:
         main_object, *attributes = row
         for index, attribute_name in enumerate(attribute_names):
             setattr(main_object, attribute_name, attributes[index])
-    return [row[0] for row in rows]
+        annotated_objects.append(main_object)
+    return annotated_objects
+
+
+async def quick_select(
+    session: AsyncSession, model: Type[DatabaseInstanceType], filters: Any = None, filter_by: Any = None
+) -> Result:
+    query = select(model)
+    if filters is not None:
+        query = query.where(*filters)
+    if filter_by is not None:
+        query = query.filter_by(**filter_by)
+    return await session.execute(query)
+
+
+async def query_relationship(
+    session: AsyncSession, instance: BaseDatabaseModel, relationship_attribute: str
+) -> list[DatabaseInstanceType]:
+    model = instance.__class__
+    query = select(model).options(selectinload(getattr(model, relationship_attribute))).filter(model.id == instance.id)
+    result = await session.execute(query)
+    fetched_instance = result.scalars().first()
+    return getattr(fetched_instance, relationship_attribute)
