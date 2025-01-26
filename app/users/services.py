@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +15,7 @@ from app.users.schemas import UserLoginOutputSchema
 User = get_user_model()
 
 
-def create_user(session: AsyncSession, username: str, password: str) -> Optional[User]:
+def create_user(session: AsyncSession, username: str, password: str) -> User | None:
     from app.auth.services import hash_password
 
     try:

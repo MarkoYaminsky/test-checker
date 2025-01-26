@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +13,7 @@ async def get_db_session() -> AsyncSession:
 
 
 async def get_http_authenticated_user(
-    authorization: Optional[str] = Header("Bearer "), session: AsyncSession = Depends(get_db_session)
+    authorization: str | None = Header("Bearer "), session: AsyncSession = Depends(get_db_session)
 ) -> User | None:
     """
     Get the http authenticated user from the JWT token in the Authorization header.

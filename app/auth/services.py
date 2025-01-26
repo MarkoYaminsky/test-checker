@@ -1,5 +1,4 @@
 from datetime import UTC, datetime, timedelta
-from typing import Optional
 from uuid import UUID
 
 import jwt
@@ -29,7 +28,7 @@ def create_jwt_token(user_id: UUID, token_type: JWTTokenType) -> str:
     return encoded_jwt
 
 
-def decode_jwt_token(token: str) -> Optional[JWTTokenPayload]:
+def decode_jwt_token(token: str) -> JWTTokenPayload | None:
     try:
         payload = jwt.decode(token, settings.encoding_key, algorithms=[ENCODING_ALGORITHM])
         expiration_datetime = datetime.fromtimestamp(float(payload.pop("exp", 0)), tz=UTC)
