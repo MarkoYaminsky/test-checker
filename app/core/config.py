@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     bucket_endpoint: str
     test_results_bucket_name: str
 
+    # Celery
+    celery_broker_url: str
+
+    # OpenAI
+    openai_api_key: str
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @property

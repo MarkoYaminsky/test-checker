@@ -1,10 +1,15 @@
+import io
+from collections import defaultdict
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.services import move_row_values_to_attributes
+from app.common.services.db import move_row_values_to_attributes
+from app.common.services.pdf import create_grid_pdf
 from app.common.utilities import get_user_model
 from app.student_tests.models import Answer, Question, StudentTestAnswer, Test
 from app.student_tests.schemas import AnswerCreateSchema, QuestionCreateSchema
+from app.student_tests.tasks import grade_test
 
 User = get_user_model()
 
@@ -112,7 +117,7 @@ async def create_student_answer(
     session.add(answer)
     await session.commit()
     await session.refresh(answer)
-    # TODO Launch celery task for grading the test
+    grade_test.delay(test.id, answer.id)
     return answer
 
 
@@ -133,6 +138,7 @@ async def get_student_answers_with_test_info(
             StudentTestAnswer.id,
             Test.name,
         )
+        .order_by(StudentTestAnswer.created_at.desc())
     )
 
     results = await session.execute(query)
@@ -143,3 +149,38 @@ async def get_student_answers_with_test_info(
             "max_score",
         ),
     )
+
+
+async def calculate_score_by_answers_grid(session: AsyncSession, grid: dict[int, list[int]], test: Test) -> int:
+    answers_query = (
+        select(Answer, Question)
+        .select_from(Answer)
+        .join(Question)
+        .where(Question.test_id == test.id, Answer.is_correct.is_(True))
+    )
+
+    results = list(await session.execute(answers_query))
+    question_position_to_question = {question.position_number: question for _, question in results}
+    correct_answers = defaultdict(list)
+    for answer, question in results:
+        correct_answers[question.position_number].append(answer.position_number)
+
+    score = 0
+    for question_number, answers in grid.items():
+        if correct_answers[question_number] == answers:
+            question = question_position_to_question.get(question_number)
+            score += question and question.points or 0
+
+    return score
+
+
+async def generate_test_answers_grid(session: AsyncSession, test: Test) -> io.BytesIO:
+    query = (
+        select(func.max(Answer.position_number), func.count(Question.id))
+        .select_from(Answer)
+        .join(Question)
+        .where(Question.test_id == test.id)
+    )
+    result = await session.execute(query)
+    max_answer_position, question_count = result.first()
+    return create_grid_pdf(question_count, max_answer_position)
