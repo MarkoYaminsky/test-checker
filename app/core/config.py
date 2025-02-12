@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     refresh_token_expiration_time_in_days: int
     access_token_expiration_time_in_minutes: int
 
+    # DigitalOcean
+    bucket_access_key: str
+    bucket_access_key_id: str
+    bucket_endpoint: str
+    test_results_bucket_name: str
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @property
