@@ -1,5 +1,3 @@
-import enum
-
 from sqlalchemy import (
     UUID,
     Boolean,
@@ -30,16 +28,10 @@ class Test(BaseDatabaseModel):
 
 class Question(BaseDatabaseModel):
     __tablename__ = "test_questions"
-
-    class Type(enum.Enum):
-        MULTIPLE_CHOICE = "multiple_choice"
-        TRUE_FALSE = "true_false"
-
     test_id = Column(UUID, ForeignKey(Test.id), nullable=False)
     content = Column(String, nullable=False)
     position_number = Column(Integer, nullable=False)
-    type = Column(String, nullable=False)
-    points = Column(Integer, nullable=True)
+    points = Column(Integer, nullable=False)
 
     test = relationship(Test, foreign_keys=[test_id], back_populates="questions")
     answers = relationship("Answer", back_populates="question", cascade="all, delete-orphan")
