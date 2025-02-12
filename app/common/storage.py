@@ -21,7 +21,7 @@ class FileStorage:
     def __init__(self, bucket_name: str) -> None:
         self.bucket_name = bucket_name
 
-    def upload(self, file: UploadFile = File(...)) -> str:
+    async def upload(self, file: UploadFile = File(...)) -> str:
         key = f"{file.filename}-{uuid.uuid4()}"
         client.put_object(
             Bucket=self.bucket_name, Key=key, Body=file.file, ACL="public-read", ContentType=file.content_type
@@ -30,5 +30,5 @@ class FileStorage:
         return file_url
 
 
-def upload_test_result(results_photo: UploadFile) -> str:
-    return FileStorage(bucket_name=settings.test_results_bucket_name).upload(results_photo)
+async def upload_test_result(results_photo: UploadFile) -> str:
+    return await FileStorage(bucket_name=settings.test_results_bucket_name).upload(results_photo)
