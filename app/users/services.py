@@ -8,12 +8,12 @@ from app.auth.services import verify_password
 from app.auth.types import JWTTokenType
 from app.common.services import get_all_entities_query
 from app.common.utilities import get_user_model
-from app.users.api.schemas import UserLoginOutputSchema
 from app.users.exceptions import (
     InvalidUserCredentialsException,
     UserDoesNotExistException,
     UserUsernameNotQniqueException,
 )
+from app.users.schemas import UserLoginOutputSchema
 
 User = get_user_model()
 

@@ -8,7 +8,7 @@ from app.core.db import SessionLocal
 from app.users.models import User
 
 
-def get_db() -> Session:
+def get_db_session() -> Session:
     db = SessionLocal()
     try:
         yield db
@@ -17,7 +17,7 @@ def get_db() -> Session:
 
 
 def get_http_authenticated_user(
-    authorization: Optional[str] = Header("Bearer "), db: Session = Depends(get_db)
+    authorization: Optional[str] = Header("Bearer "), db: Session = Depends(get_db_session)
 ) -> Optional[User]:
     """
     Get the http authenticated user from the JWT token in the Authorization header.

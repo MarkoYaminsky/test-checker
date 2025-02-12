@@ -5,6 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.core.db import Base
+from app.student_tests.models import Answer, Question, StudentTestAnswer, Test  # noqa
 from app.users.models import User  # noqa
 
 config = context.config

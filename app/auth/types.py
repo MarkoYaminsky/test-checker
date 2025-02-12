@@ -6,7 +6,6 @@ from typing import NamedTuple
 class JWTTokenType(Enum):
     access = auto()
     refresh = auto()
-    websocket = auto()
 
 
 class JWTTokenPayload(NamedTuple):
