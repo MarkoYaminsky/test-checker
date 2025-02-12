@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.services import verify_password
 from app.auth.types import JWTTokenType
-from app.common.services import quick_select
+from app.common.services.db import quick_select
 from app.common.utilities import get_user_model
 from app.users.exceptions import (
     InvalidUserCredentialsException,
@@ -15,14 +15,14 @@ from app.users.schemas import UserLoginOutputSchema
 User = get_user_model()
 
 
-def create_user(session: AsyncSession, username: str, password: str) -> User | None:
+async def create_user(session: AsyncSession, username: str, password: str) -> User | None:
     from app.auth.services import hash_password
 
     try:
         user = User(username=username, password=hash_password(password))
         session.add(user)
-        session.commit()
-        session.refresh(user)
+        await session.commit()
+        await session.refresh(user)
     except IntegrityError:
         raise UserUsernameNotQniqueException(username=username)
     return user
@@ -35,12 +35,13 @@ async def login_user(session: AsyncSession, username: str, password: str) -> Use
         await quick_select(
             session=session,
             model=User,
+            filter_by={"username": username},
         )
     ).scalar()
     if user is None:
         raise UserDoesNotExistException(username=username)
     if not verify_user_password(user, password):
-        raise InvalidUserCredentialsException()
+        raise InvalidUserCredentialsException
     return UserLoginOutputSchema(
         access_token=create_jwt_token(user_id=user.id, token_type=JWTTokenType.access),
         refresh_token=create_jwt_token(user_id=user.id, token_type=JWTTokenType.refresh),

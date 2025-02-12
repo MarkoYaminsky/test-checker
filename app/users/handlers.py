@@ -6,6 +6,7 @@ from app.common.decorators import expects_exceptions
 from app.common.dependencies import get_db_session, get_http_authenticated_user
 from app.common.utilities import get_user_model
 from app.users.exceptions import (
+    InvalidUserCredentialsException,
     UserDoesNotExistException,
     UserUsernameNotQniqueException,
 )
@@ -34,17 +35,15 @@ async def get_self_route(user: User = Depends(get_http_authenticated_user)):
 async def register_user_route(
     registration_data: UserRegistrationInputSchema, session: AsyncSession = Depends(get_db_session)
 ):
-    return create_user(session, username=registration_data.username, password=registration_data.password)
+    return await create_user(session, username=registration_data.username, password=registration_data.password)
 
 
 @users_router.post("/login/", response_model=UserLoginOutputSchema)
 @expects_exceptions(
-    {
-        UserDoesNotExistException: status.HTTP_404_NOT_FOUND,
-    }
+    {UserDoesNotExistException: status.HTTP_404_NOT_FOUND, InvalidUserCredentialsException: status.HTTP_400_BAD_REQUEST}
 )
 async def login_user_route(credentials: UserLoginInputSchema, session: AsyncSession = Depends(get_db_session)):
-    return login_user(session, username=credentials.username, password=credentials.password)
+    return await login_user(session, username=credentials.username, password=credentials.password)
 
 
 @users_router.post("/tokens/obtain/", response_model=TokenObtainByRefreshOutputSchema)

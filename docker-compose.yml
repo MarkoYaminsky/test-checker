@@ -15,3 +15,38 @@ services:
       - "./db:/var/lib/postgresql/data"
     ports:
       - "5433:5432"
+    networks:
+      - test-checker
+
+  redis:
+    image: redis:alpine
+    container_name: test-checker-redis
+    restart: always
+    ports:
+      - "6380:6379"
+    networks:
+      - test-checker
+
+  celery_worker:
+    container_name: test-checker-celery-worker
+    build: .
+    env_file: .env
+    command: [ 'poetry', 'run', 'celery', '-A', 'app.core.celery_app', 'worker', '--loglevel=info' ]
+    volumes:
+      - .app:/app/
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+    depends_on:
+      - redis
+      - db
+    networks:
+      - test-checker
+
+networks:
+  test-checker:
+    driver: bridge

@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from app.common.services import quick_select
+from app.common.services.db import quick_select
 from app.common.types import DatabaseInstanceType
 from app.common.utilities import get_user_model
 

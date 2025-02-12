@@ -2,10 +2,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import StreamingResponse
 
 from app.common.dependencies import get_db_session, get_http_authenticated_user
 from app.common.handlers import check_if_object_belongs_to_user, get_object_or_404
-from app.common.services import query_relationship
+from app.common.services.db import query_relationship
 from app.common.storage import upload_test_result
 from app.common.utilities import get_user_model
 from app.student_tests.models import Answer, Question, Test
@@ -28,6 +29,7 @@ from app.student_tests.services import (
     delete_answer,
     delete_question,
     delete_test,
+    generate_test_answers_grid,
     get_student_answers_with_test_info,
     update_answer,
     update_question,
@@ -223,4 +225,8 @@ async def get_student_test_answers_route(
     return await get_student_answers_with_test_info(session=session, test=test)
 
 
-# TODO Add endpoint that generates pdf with table for test
+@student_tests_router.get("/{test_id}/grid/")
+async def get_test_grid(test_id: UUID, session: AsyncSession = Depends(get_db_session)):
+    test = await get_object_or_404(session, Test, id=test_id)
+    grid_pdf = await generate_test_answers_grid(session, test)
+    return StreamingResponse(grid_pdf, media_type="application/pdf")

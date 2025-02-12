@@ -1,11 +1,12 @@
-FROM python:3.11
+FROM python:3.13
 
 COPY ./app /opt/app
-COPY requirements.txt alembic.ini /opt/
+COPY poetry.lock pyproject.toml alembic.ini /opt/
 
 WORKDIR /opt/
 
-RUN pip install -r requirements.txt
+RUN pip install poetry
+RUN poetry install
 
 ENV PYTHONUNBUFFERED=1
 

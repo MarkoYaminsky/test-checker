@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.constants import ENCODING_ALGORITHM
 from app.auth.exceptions import InvalidJWTTokenException
 from app.auth.types import JWTTokenPayload, JWTTokenType
-from app.common.services import quick_select
+from app.common.services.db import quick_select
 from app.common.utilities import get_user_model
 from app.core.config import settings
 
