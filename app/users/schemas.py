@@ -1,6 +1,7 @@
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StringConstraints
 
 
 class UserOutputSchema(BaseModel):
@@ -11,13 +12,13 @@ class UserOutputSchema(BaseModel):
 
 
 class UserRegistrationInputSchema(BaseModel):
-    username: str
-    password: str
+    username: Annotated[str, StringConstraints(min_length=3)]
+    password: Annotated[str, StringConstraints(min_length=3)]
 
 
 class UserLoginInputSchema(BaseModel):
-    username: str
-    password: str
+    username: Annotated[str, StringConstraints(min_length=3)]
+    password: Annotated[str, StringConstraints(min_length=3)]
 
 
 class UserLoginOutputSchema(BaseModel):

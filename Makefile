@@ -1,5 +1,6 @@
 start-deps:
 	docker compose up --build -d
+	poetry install
 
 runserver:
 	make start-deps
