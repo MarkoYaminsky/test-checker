@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StringConstraints
 
 
 class AnswerOutputSchema(BaseModel):
@@ -29,27 +30,27 @@ class TestOutputSchema(BaseModel):
 
 
 class AnswerCreateSchema(BaseModel):
-    content: str
+    content: Annotated[str, StringConstraints(min_length=1)]
     is_correct: bool
 
 
 class QuestionCreateSchema(BaseModel):
-    content: str
+    content: Annotated[str, StringConstraints(min_length=3)]
     points: int
     answers: list[AnswerCreateSchema]
 
 
 class TestCreateSchema(BaseModel):
-    name: str
+    name: Annotated[str, StringConstraints(min_length=3)]
     questions: list[QuestionCreateSchema] = []
 
 
 class QuestionUpdateSchema(BaseModel):
-    content: str
+    content: Annotated[str, StringConstraints(min_length=3)]
 
 
 class AnswerUpdateSchema(BaseModel):
-    content: str
+    content: Annotated[str, StringConstraints(min_length=1)]
     is_correct: bool
 
 

@@ -2,13 +2,16 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette import status
 from starlette.responses import StreamingResponse
 
+from app.common.decorators import expects_exceptions
 from app.common.dependencies import get_db_session, get_http_authenticated_user
 from app.common.handlers import check_if_object_belongs_to_user, get_object_or_404
 from app.common.services.db import query_relationship
 from app.common.storage import upload_test_result
 from app.common.utilities import get_user_model
+from app.student_tests.exceptions import DuplicateTestNameException
 from app.student_tests.models import Answer, Question, Test
 from app.student_tests.schemas import (
     AnswerCreateSchema,
@@ -42,6 +45,7 @@ student_tests_router = APIRouter()
 
 
 @student_tests_router.post("/", response_model=TestOutputSchema)
+@expects_exceptions({DuplicateTestNameException: status.HTTP_400_BAD_REQUEST})
 async def create_test_route(
     test_data: TestCreateSchema,
     user: User = Depends(get_http_authenticated_user),
@@ -78,7 +82,7 @@ async def get_questions_route(
     test = await get_object_or_404(session, Test, id=test_id)
     check_if_object_belongs_to_user(test.teacher, user)
 
-    return await query_relationship(session, test, "questions")
+    return await query_relationship(session, test, [Test.questions])
 
 
 @student_tests_router.post("/questions/{question_id}/answers/", response_model=AnswerOutputSchema)
@@ -105,14 +109,14 @@ async def get_answers_route(
     question = await get_object_or_404(session, Question, id=question_id)
     check_if_object_belongs_to_user(question.test.teacher, user)
 
-    return await query_relationship(session, question, "answers")
+    return await query_relationship(session, question, [Question.answers])
 
 
 @student_tests_router.get("/", response_model=list[TestOutputSchema])
 async def get_tests_route(
     user: User = Depends(get_http_authenticated_user), session: AsyncSession = Depends(get_db_session)
 ):
-    return await query_relationship(session=session, instance=user, relationship_attribute="tests")
+    return await query_relationship(session=session, instance=user, relationship_attributes=[User.tests])
 
 
 @student_tests_router.get("/{test_id}/", response_model=TestOutputSchema)
@@ -143,7 +147,12 @@ async def update_question_route(
     session: AsyncSession = Depends(get_db_session),
 ):
     question = await get_object_or_404(session, Question, id=question_id)
-    check_if_object_belongs_to_user(question.test.teacher, user)
+    check_if_object_belongs_to_user(
+        await query_relationship(
+            session=session, instance=question, relationship_attributes=[Question.test, Test.teacher]
+        ),
+        user,
+    )
 
     return await update_question(
         session=session,
@@ -160,7 +169,12 @@ async def update_answer_route(
     session: AsyncSession = Depends(get_db_session),
 ):
     answer = await get_object_or_404(session, Answer, id=answer_id)
-    check_if_object_belongs_to_user(answer.question.test.teacher, user)
+    check_if_object_belongs_to_user(
+        await query_relationship(
+            session=session, instance=answer, relationship_attributes=[Answer.question, Question.test, Test.teacher]
+        ),
+        user,
+    )
 
     return await update_answer(
         session=session, answer=answer, content=answer_data.content, is_correct=answer_data.is_correct
@@ -184,7 +198,12 @@ async def delete_question_route(
     session: AsyncSession = Depends(get_db_session),
 ):
     question = await get_object_or_404(session, Question, id=question_id)
-    check_if_object_belongs_to_user(question.test.teacher, user)
+    check_if_object_belongs_to_user(
+        await query_relationship(
+            session=session, instance=question, relationship_attributes=[Question.test, Test.teacher]
+        ),
+        user,
+    )
 
     await delete_question(session=session, question=question)
 

@@ -4,9 +4,14 @@ from collections import defaultdict
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.services.db import move_row_values_to_attributes
+from app.common.services.db import (
+    move_row_values_to_attributes,
+    query_relationship,
+    quick_select,
+)
 from app.common.services.pdf import create_grid_pdf
 from app.common.utilities import get_user_model
+from app.student_tests.exceptions import DuplicateTestNameException
 from app.student_tests.models import Answer, Question, StudentTestAnswer, Test
 from app.student_tests.schemas import AnswerCreateSchema, QuestionCreateSchema
 from app.student_tests.tasks import grade_test
@@ -15,6 +20,11 @@ User = get_user_model()
 
 
 async def create_test(session: AsyncSession, teacher: User, name: str, questions: list[QuestionCreateSchema]) -> Test:
+    teacher_test_with_same_name = (
+        await quick_select(session=session, model=Test, filter_by={"name": name, "teacher_id": teacher.id})
+    ).scalar()
+    if teacher_test_with_same_name is not None:
+        raise DuplicateTestNameException(name)
     test = Test(teacher_id=teacher.id, name=name)
     session.add(test)
     await session.commit()
@@ -41,7 +51,9 @@ async def create_question(
     position_number: int | None = None,
 ) -> Question:
     if position_number is None:
-        position_number = len(test.questions) + 1
+        position_number = (
+            len(await query_relationship(session=session, instance=test, relationship_attributes=[Test.questions])) + 1
+        )
 
     question = Question(test_id=test.id, content=content, position_number=position_number, points=points)
     session.add(question)
@@ -64,7 +76,7 @@ async def create_answer(
     session: AsyncSession, question: Question, content: str, is_correct: bool, position_number: int | None = None
 ) -> Answer:
     if position_number is None:
-        position_number = len(question.answers) + 1
+        position_number = len(await query_relationship(session, question, [Question.answers])) + 1
 
     answer = Answer(question_id=question.id, content=content, is_correct=is_correct, position_number=position_number)
     session.add(answer)
