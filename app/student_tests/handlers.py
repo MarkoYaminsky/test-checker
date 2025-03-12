@@ -93,9 +93,14 @@ async def create_answer_route(
     session: AsyncSession = Depends(get_db_session),
 ):
     question = await get_object_or_404(session, Question, id=question_id)
-    check_if_object_belongs_to_user(question.test.teacher, user)
+    check_if_object_belongs_to_user(
+        await query_relationship(
+            session=session, instance=question, relationship_attributes=[Question.test, Test.teacher]
+        ),
+        user,
+    )
 
-    return create_answer(
+    return await create_answer(
         session=session, question=question, content=answer_data.content, is_correct=answer_data.is_correct
     )
 
@@ -107,7 +112,12 @@ async def get_answers_route(
     session: AsyncSession = Depends(get_db_session),
 ):
     question = await get_object_or_404(session, Question, id=question_id)
-    check_if_object_belongs_to_user(question.test.teacher, user)
+    check_if_object_belongs_to_user(
+        await query_relationship(
+            session=session, instance=question, relationship_attributes=[Question.test, Test.teacher]
+        ),
+        user,
+    )
 
     return await query_relationship(session, question, [Question.answers])
 
