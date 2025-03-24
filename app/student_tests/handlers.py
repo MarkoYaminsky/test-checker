@@ -223,7 +223,12 @@ async def delete_answer_route(
     answer_id: UUID, user: User = Depends(get_http_authenticated_user), session: AsyncSession = Depends(get_db_session)
 ):
     answer = await get_object_or_404(session, Answer, id=answer_id)
-    check_if_object_belongs_to_user(answer.question.test.teacher, user)
+    check_if_object_belongs_to_user(
+        await query_relationship(
+            session=session, instance=answer, relationship_attributes=[Answer.question, Question.test, Test.teacher]
+        ),
+        user,
+    )
 
     await delete_answer(session=session, answer=answer)
 
