@@ -187,12 +187,16 @@ async def calculate_score_by_answers_grid(session: AsyncSession, grid: dict[int,
 
 
 async def generate_test_answers_grid(session: AsyncSession, test: Test) -> io.BytesIO:
+    subquery = (
+        select(func.count(Answer.id)).where(Answer.question_id == Question.id).correlate(Question).scalar_subquery()
+    )
+
     query = (
-        select(func.max(Answer.position_number), func.count(Question.id))
+        select(func.max(Answer.position_number), func.max(subquery))
         .select_from(Answer)
         .join(Question)
         .where(Question.test_id == test.id)
     )
     result = await session.execute(query)
     max_answer_position, question_count = result.first()
-    return create_grid_pdf(question_count, max_answer_position)
+    return create_grid_pdf(question_count or 0, max_answer_position or 0)
