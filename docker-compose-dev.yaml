@@ -24,7 +24,6 @@ services:
       context: .
       dockerfile: dev.Dockerfile
     env_file: .env
-    command: zsh
     volumes:
       - .:/app/
     depends_on:
