@@ -8,7 +8,9 @@ ENV PYTHONUNBUFFERED=1
 
 # Install Poetry the right way
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s $POETRY_HOME/bin/poetry /usr/local/bin/poetry
+    poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-ansi
+
 
 # Copy project files
 COPY ./app /opt/app
