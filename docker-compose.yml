@@ -33,7 +33,7 @@ services:
     env_file: .env
     command: [ 'poetry', 'run', 'celery', '-A', 'app.core.celery_app', 'worker', '--loglevel=info' ]
     volumes:
-      - .app:/app/
+      - ./app:/app/
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - DATABASE_HOST=db
