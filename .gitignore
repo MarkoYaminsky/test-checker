@@ -18,3 +18,4 @@ db/
 .venv/
 .pytest_cache/
 *.pyc
+dev.sh
