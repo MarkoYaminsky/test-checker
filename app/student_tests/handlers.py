@@ -23,6 +23,7 @@ from app.student_tests.schemas import (
     StudentTestAnswerOutputSchema,
     TestCreateSchema,
     TestOutputSchema,
+    TestUpdateSchema,
 )
 from app.student_tests.services import (
     create_answer,
@@ -137,14 +138,14 @@ async def get_test_route(test_id: UUID, session: AsyncSession = Depends(get_db_s
 @student_tests_router.put("/{test_id}/", response_model=TestOutputSchema)
 async def update_test_route(
     test_id: UUID,
-    test_data: TestCreateSchema,
+    test_data: TestUpdateSchema,
     user: User = Depends(get_http_authenticated_user),
     session: AsyncSession = Depends(get_db_session),
 ):
     test = await get_object_or_404(session, Test, id=test_id)
     check_if_object_belongs_to_user(test.teacher, user)
 
-    await update_test(session=session, test=test, name=test_data.name)
+    await update_test(session=session, test=test, name=test_data.name, question_ids=test_data.question_ids)
 
     return test
 

@@ -1,5 +1,6 @@
 import io
 from collections import defaultdict
+from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -100,7 +101,17 @@ async def delete_answer(session: AsyncSession, answer: Answer) -> None:
     await session.commit()
 
 
-async def update_test(session: AsyncSession, test: Test, name: str) -> Test:
+async def update_test(session: AsyncSession, test: Test, name: str, question_ids: list[UUID]) -> Test:
+    if question_ids:
+        ids_to_questions: dict[UUID, Question] = {
+            question.id: question
+            for question in await query_relationship(
+                session=session, instance=test, relationship_attributes=[Test.questions]
+            )
+        }
+        for index, question_id in enumerate(question_ids, start=1):
+            ids_to_questions[question_id].position_number = index
+
     test.name = name
     await session.commit()
     await session.refresh(test)

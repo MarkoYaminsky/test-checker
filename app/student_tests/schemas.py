@@ -45,6 +45,11 @@ class TestCreateSchema(BaseModel):
     questions: list[QuestionCreateSchema] = []
 
 
+class TestUpdateSchema(BaseModel):
+    name: Annotated[str, StringConstraints(min_length=3)]
+    question_ids: list[UUID] = []
+
+
 class QuestionUpdateSchema(BaseModel):
     content: Annotated[str, StringConstraints(min_length=3)]
 
