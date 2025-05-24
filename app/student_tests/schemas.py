@@ -25,6 +25,8 @@ class QuestionOutputSchema(BaseModel):
 class TestOutputSchema(BaseModel):
     id: UUID
     name: str
+    created_at: datetime
+    questions_count: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -68,5 +70,11 @@ class StudentTestAnswerOutputSchema(BaseModel):
     test_name: str
     max_score: int
     score: int | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StudentTestAnswerUpdateSchema(BaseModel):
+    score: int
 
     model_config = ConfigDict(from_attributes=True)

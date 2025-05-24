@@ -12,7 +12,7 @@ from app.common.services.db import query_relationship
 from app.common.storage import upload_test_result
 from app.common.utilities import get_user_model
 from app.student_tests.exceptions import DuplicateTestNameException
-from app.student_tests.models import Answer, Question, Test
+from app.student_tests.models import Answer, Question, StudentTestAnswer, Test
 from app.student_tests.schemas import (
     AnswerCreateSchema,
     AnswerOutputSchema,
@@ -21,11 +21,14 @@ from app.student_tests.schemas import (
     QuestionOutputSchema,
     QuestionUpdateSchema,
     StudentTestAnswerOutputSchema,
+    StudentTestAnswerUpdateSchema,
     TestCreateSchema,
     TestOutputSchema,
     TestUpdateSchema,
 )
 from app.student_tests.services import (
+    annotate_student_answer_with_test_info,
+    annotate_tests_with_questions_count,
     create_answer,
     create_question,
     create_student_answer,
@@ -37,6 +40,7 @@ from app.student_tests.services import (
     get_student_answers_with_test_info,
     update_answer,
     update_question,
+    update_student_test_answer_score,
     update_test,
 )
 
@@ -127,7 +131,10 @@ async def get_answers_route(
 async def get_tests_route(
     user: User = Depends(get_http_authenticated_user), session: AsyncSession = Depends(get_db_session)
 ):
-    return await query_relationship(session=session, instance=user, relationship_attributes=[User.tests])
+    return await annotate_tests_with_questions_count(
+        session=session,
+        tests=await query_relationship(session=session, instance=user, relationship_attributes=[User.tests]),
+    )
 
 
 @student_tests_router.get("/{test_id}/", response_model=TestOutputSchema)
@@ -260,8 +267,41 @@ async def get_student_test_answers_route(
     return await get_student_answers_with_test_info(session=session, test=test)
 
 
+@student_tests_router.get("/student-answers/{answer_id}/", response_model=StudentTestAnswerOutputSchema)
+async def get_student_test_answer_by_id_route(
+    answer_id: UUID, user: User = Depends(get_http_authenticated_user), session: AsyncSession = Depends(get_db_session)
+):
+    answer = await get_object_or_404(session, StudentTestAnswer, id=answer_id)
+    check_if_object_belongs_to_user(
+        await query_relationship(
+            session=session, instance=answer, relationship_attributes=[StudentTestAnswer.test, Test.teacher]
+        ),
+        user,
+    )
+
+    return await annotate_student_answer_with_test_info(session, answer)
+
+
+@student_tests_router.put("/student-answers/{answer_id}/", response_model=StudentTestAnswerOutputSchema)
+async def update_student_test_answer_route(
+    answer_id: UUID,
+    answer_data: StudentTestAnswerUpdateSchema,
+    user: User = Depends(get_http_authenticated_user),
+    session: AsyncSession = Depends(get_db_session),
+):
+    answer = await get_object_or_404(session, StudentTestAnswer, id=answer_id)
+    check_if_object_belongs_to_user(
+        await query_relationship(
+            session=session, instance=answer, relationship_attributes=[StudentTestAnswer.test, Test.teacher]
+        ),
+        user,
+    )
+    await update_student_test_answer_score(session, answer, answer_data.score)
+    return await annotate_student_answer_with_test_info(session, answer)
+
+
 @student_tests_router.get("/{test_id}/grid/")
-async def get_test_grid(test_id: UUID, session: AsyncSession = Depends(get_db_session)):
+async def get_test_grid_route(test_id: UUID, session: AsyncSession = Depends(get_db_session)):
     test = await get_object_or_404(session, Test, id=test_id)
     grid_pdf = await generate_test_answers_grid(session, test)
     return StreamingResponse(grid_pdf, media_type="application/pdf")

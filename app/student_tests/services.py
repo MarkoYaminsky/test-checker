@@ -109,6 +109,11 @@ async def update_test(session: AsyncSession, test: Test, name: str, question_ids
                 session=session, instance=test, relationship_attributes=[Test.questions]
             )
         }
+
+        for question in ids_to_questions.values():
+            question.position_number += 10000
+        await session.flush()
+
         for index, question_id in enumerate(question_ids, start=1):
             ids_to_questions[question_id].position_number = index
 
@@ -164,14 +169,40 @@ async def get_student_answers_with_test_info(
         .order_by(StudentTestAnswer.created_at.desc())
     )
 
-    results = await session.execute(query)
     return move_row_values_to_attributes(
-        results,
+        await session.execute(query),
         (
             "test_name",
             "max_score",
         ),
     )
+
+
+async def annotate_student_answer_with_test_info(
+    session: AsyncSession, student_answer: StudentTestAnswer
+) -> StudentTestAnswer:
+    query = (
+        select(
+            StudentTestAnswer,
+            Test.name.label("test_name"),
+            func.coalesce(func.sum(Question.points).label("max_points"), 0),
+        )
+        .select_from(StudentTestAnswer)
+        .join(Test)
+        .outerjoin(Question)
+        .where(StudentTestAnswer.id == student_answer.id)
+        .group_by(
+            StudentTestAnswer.id,
+            Test.name,
+        )
+    )
+
+    stmt = await session.execute(query)
+    result = stmt.first()
+    answer, test_name, max_points = result
+    student_answer.test_name = test_name
+    student_answer.max_score = max_points
+    return student_answer
 
 
 async def calculate_score_by_answers_grid(session: AsyncSession, grid: dict[int, list[int]], test: Test) -> int:
@@ -211,3 +242,31 @@ async def generate_test_answers_grid(session: AsyncSession, test: Test) -> io.By
     result = await session.execute(query)
     max_answer_position, question_count = result.first()
     return create_grid_pdf(question_count or 0, max_answer_position or 0)
+
+
+async def annotate_tests_with_questions_count(session: AsyncSession, tests: list[Test]) -> list[Test]:
+    if not tests:
+        return []
+
+    test_ids = [test.id for test in tests]
+    query = (
+        select(
+            Test,
+            func.count(Question.id).label("questions_count"),
+        )
+        .select_from(Test)
+        .join(Question)
+        .where(Test.id.in_(test_ids))
+        .group_by(Test.id)
+    )
+
+    results = await session.execute(query)
+    return move_row_values_to_attributes(results, ("questions_count",))
+
+
+async def update_student_test_answer_score(
+    session: AsyncSession, student_test_answer: StudentTestAnswer, points: int
+) -> StudentTestAnswer:
+    student_test_answer.score = points
+    await session.commit()
+    return student_test_answer
