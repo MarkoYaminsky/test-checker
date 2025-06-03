@@ -176,6 +176,7 @@ async def update_question_route(
         session=session,
         question=question,
         content=question_data.content,
+        points=question_data.points,
     )
 
 

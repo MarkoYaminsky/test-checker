@@ -123,7 +123,8 @@ async def update_test(session: AsyncSession, test: Test, name: str, question_ids
     return test
 
 
-async def update_question(session: AsyncSession, question: Question, content: str) -> Question:
+async def update_question(session: AsyncSession, question: Question, content: str, points: int) -> Question:
+    question.points = points
     question.content = content
     await session.commit()
     await session.refresh(question)
