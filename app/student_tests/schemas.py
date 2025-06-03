@@ -53,6 +53,7 @@ class TestUpdateSchema(BaseModel):
 
 
 class QuestionUpdateSchema(BaseModel):
+    points: int
     content: Annotated[str, StringConstraints(min_length=3)]
 
 

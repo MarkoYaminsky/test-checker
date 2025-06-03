@@ -241,7 +241,12 @@ async def generate_test_answers_grid(session: AsyncSession, test: Test) -> io.By
     )
     result = await session.execute(query)
     max_answer_position, question_count = result.first()
-    return create_grid_pdf(question_count or 0, max_answer_position or 0)
+    return await create_grid_pdf(
+        session,
+        question_count or 0,
+        max_answer_position or 0,
+        await query_relationship(session, test, [Test.questions]),
+    )
 
 
 async def annotate_tests_with_questions_count(session: AsyncSession, tests: list[Test]) -> list[Test]:

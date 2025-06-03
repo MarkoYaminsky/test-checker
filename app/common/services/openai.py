@@ -47,6 +47,10 @@ def get_student_answer_grid(student_answer: StudentTestAnswer) -> dict[int, list
             }
         ],
     )
-    response_message_content = response.choices[0].message.content.strip("json`")
+    try:
+        response_message_content = response.choices[0].message.content.strip("json`")
+    except AttributeError:
+        logger.error(f"Response from OpenAI: {response.choices[0].message.__dict__}.")
+        response_message_content = "{}"
     logger.info(f"Extracted such grid: {response_message_content}")
     return {int(key): value for key, value in json.loads(response_message_content).items()}

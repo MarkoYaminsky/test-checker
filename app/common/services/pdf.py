@@ -3,10 +3,31 @@ import os
 import uuid
 
 from fpdf import FPDF
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.common.services.db import query_relationship
+from app.student_tests.models import Question
 
 
-def create_grid_pdf(columns_number: int, rows_number: int) -> io.BytesIO:
+async def create_grid_pdf(session: AsyncSession, columns_number: int, rows_number: int, questions: list) -> io.BytesIO:
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    page_width = pdf.w - 2 * pdf.l_margin
+
+    pdf.add_page()
+    for idx, question in enumerate(questions, start=1):
+        pdf.multi_cell(page_width, 10, f"{idx}. {question.content}")
+        pdf.set_x(pdf.l_margin)
+
+        answers = await query_relationship(session, question, [Question.answers])
+        for i, answer in enumerate(answers, start=1):
+            answer_indent = 10
+            pdf.set_x(pdf.get_x() + answer_indent)
+            pdf.cell(0, 10, f"{chr(97 + i)}) {answer.content}", ln=True)
+
+        pdf.ln(5)
+
     pdf.add_page()
     pdf.set_font("Arial", "B", 12)
 
