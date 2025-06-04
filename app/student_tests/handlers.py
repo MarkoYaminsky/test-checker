@@ -246,6 +246,7 @@ async def delete_answer_route(
 async def submit_test_answer_route(
     test_id: UUID,
     student_username: str = Form(...),
+    student_group: str = Form(...),
     results_photo: UploadFile = File(...),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -255,6 +256,7 @@ async def submit_test_answer_route(
         test=test,
         student_username=student_username,
         results_url=await upload_test_result(results_photo),
+        student_group=student_group,
     )
 
 

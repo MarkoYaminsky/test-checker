@@ -67,6 +67,7 @@ class StudentTestAnswerOutputSchema(BaseModel):
     test_id: UUID
     created_at: datetime
     student_username: str
+    student_group: str
     results_photo_url: str
     test_name: str
     max_score: int

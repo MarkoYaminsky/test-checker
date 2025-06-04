@@ -60,5 +60,6 @@ class StudentTestAnswer(BaseDatabaseModel):
     student_username = Column(String, nullable=False)
     results_photo_url = Column(String, nullable=False)
     score = Column(Integer, nullable=True)
+    student_group = Column(String, nullable=False)
 
     test = relationship(Test, foreign_keys=[test_id], back_populates="student_test_answers")

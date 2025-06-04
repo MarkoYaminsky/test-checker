@@ -140,9 +140,11 @@ async def update_answer(session: AsyncSession, answer: Answer, content: str, is_
 
 
 async def create_student_answer(
-    session: AsyncSession, test: Test, student_username: str, results_url: str
+    session: AsyncSession, test: Test, student_username: str, results_url: str, student_group: str
 ) -> StudentTestAnswer:
-    answer = StudentTestAnswer(test_id=test.id, student_username=student_username, results_photo_url=results_url)
+    answer = StudentTestAnswer(
+        test_id=test.id, student_username=student_username, results_photo_url=results_url, student_group=student_group
+    )
     session.add(answer)
     await session.commit()
     await session.refresh(answer)
