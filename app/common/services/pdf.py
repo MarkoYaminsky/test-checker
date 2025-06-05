@@ -12,8 +12,8 @@ from app.student_tests.models import Question
 async def create_grid_pdf(session: AsyncSession, columns_number: int, rows_number: int, questions: list) -> io.BytesIO:
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_font("Alice", "", "app/common/fonts/Alice-Regular.ttf", uni=True)
-    pdf.set_font("Alice", size=12)
+    pdf.add_font("Arimo", "", "app/common/fonts/Arimo-Regular.ttf", uni=True)
+    pdf.set_font("Arimo", size=12)
     page_width = pdf.w - 2 * pdf.l_margin
 
     pdf.add_page()
