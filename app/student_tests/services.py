@@ -2,7 +2,7 @@ import io
 from collections import defaultdict
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.services.db import (
@@ -237,7 +237,7 @@ async def generate_test_answers_grid(session: AsyncSession, test: Test) -> io.By
     )
 
     query = (
-        select(func.max(Answer.position_number), func.max(subquery))
+        select(func.count(distinct(Question.id)), func.max(subquery))
         .select_from(Answer)
         .join(Question)
         .where(Question.test_id == test.id)
