@@ -36,13 +36,13 @@ async def create_grid_pdf(session: AsyncSession, columns_number: int, rows_numbe
     row_height = 10
 
     pdf.cell(column_width, row_height, "", border=1, align="C")
-    for column_index in range(columns_number - 1):
+    for column_index in range(columns_number):
         pdf.cell(column_width, row_height, chr(65 + column_index), border=1, align="C")
     pdf.ln()
 
-    for row_index in range(rows_number):
+    for row_index in range(rows_number - 1):
         pdf.cell(column_width, row_height, str(row_index + 1), border=1, align="C")
-        for column_index in range(columns_number - 1):
+        for column_index in range(columns_number):
             pdf.cell(column_width, row_height, "", border=1, align="C")
         pdf.ln()
 

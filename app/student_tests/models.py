@@ -22,7 +22,9 @@ class Test(BaseDatabaseModel):
     name = Column(String, nullable=False)
 
     teacher = relationship(User, foreign_keys=[teacher_id], back_populates="tests")
-    questions = relationship("Question", back_populates="test", cascade="all, delete-orphan")
+    questions = relationship(
+        "Question", back_populates="test", cascade="all, delete-orphan", order_by="Question.position_number"
+    )
     student_test_answers = relationship("StudentTestAnswer", back_populates="test", cascade="all, delete-orphan")
 
 
@@ -34,7 +36,9 @@ class Question(BaseDatabaseModel):
     points = Column(Integer, nullable=False)
 
     test = relationship(Test, foreign_keys=[test_id], back_populates="questions")
-    answers = relationship("Answer", back_populates="question", cascade="all, delete-orphan")
+    answers = relationship(
+        "Answer", back_populates="question", cascade="all, delete-orphan", order_by="Answer.position_number"
+    )
 
     __table_args__ = (UniqueConstraint("test_id", "position_number", name="uix_test_questions_test_id_number"),)
 
