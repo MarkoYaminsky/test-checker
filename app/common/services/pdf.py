@@ -22,7 +22,7 @@ async def create_grid_pdf(session: AsyncSession, columns_number: int, rows_numbe
         pdf.set_x(pdf.l_margin)
 
         answers = await query_relationship(session, question, [Question.answers])
-        for i, answer in enumerate(answers, start=1):
+        for i, answer in enumerate(answers):
             answer_indent = 10
             pdf.set_x(pdf.get_x() + answer_indent)
             pdf.cell(0, 10, f"{chr(97 + i)}) {answer.content}", ln=True)
@@ -36,13 +36,13 @@ async def create_grid_pdf(session: AsyncSession, columns_number: int, rows_numbe
     row_height = 10
 
     pdf.cell(column_width, row_height, "", border=1, align="C")
-    for column_index in range(columns_number):
+    for column_index in range(columns_number - 1):
         pdf.cell(column_width, row_height, chr(65 + column_index), border=1, align="C")
     pdf.ln()
 
     for row_index in range(rows_number):
         pdf.cell(column_width, row_height, str(row_index + 1), border=1, align="C")
-        for column_index in range(columns_number):
+        for column_index in range(columns_number - 1):
             pdf.cell(column_width, row_height, "", border=1, align="C")
         pdf.ln()
 
